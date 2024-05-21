@@ -33,8 +33,7 @@ async def on_ready():
 
 @bot.tree.command(name="help", description="查看指令使用說明") 
 async def help(ctx):
-    await ctx.response.send_message("# 指令說明\n## 注意!使用前請確保您沒有封鎖機器人並且有開啟私訊功能，否則將無法收到加解密完的檔案\n* /**help** 查看指令說明\n* **/生成金鑰** 生成加密金鑰，如果已經有金鑰將會被覆蓋\n* **/設定金鑰** 設定你的解密金鑰(解密他人檔案時可以用到)\n* **/加密** 用金鑰加密你的檔案(檔案最大15MB)，如果還沒有金鑰會先生成一個\n* **/解密** 用金鑰解密你的檔案(檔案最大15MB)，如果要解密其他金鑰加密的檔案請用**/設定金鑰**\n\n *made by* [*yimang*](https://github.com/imyimang/discord-encrypt-bot)", ephemeral=True)
-
+    await ctx.response.send_message("# 指令說明\n## 注意!使用前請確保您沒有封鎖機器人並且有開啟私訊功能，否則將無法收到加解密完的檔案\n* **/help** 查看指令說明\n* **/生成金鑰** 生成加密金鑰，如果已經有金鑰將會被覆蓋\n* **/設定金鑰** 設定你的解密金鑰(解密他人檔案時可以用到)\n* **/加密** 用金鑰加密你的檔案(檔案最大15MB)，如果還沒有金鑰會先生成一個\n* **/解密** 用金鑰解密你的檔案(檔案最大15MB)，如果要解密其他金鑰加密的檔案請用**/設定金鑰**\n\n *made by* [*yimang*](https://github.com/imyimang/discord-encrypt-bot)\n[邀請機器人](https://discord.com/oauth2/authorize?client_id=1242337935022624788&permissions=551903332352&scope=bot)", ephemeral=True)
 
 @bot.tree.command(name="生成金鑰", description="重新生成你的加密金鑰(先前加密的檔案將無法解密)") 
 async def generate_key(ctx):
