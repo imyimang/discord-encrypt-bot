@@ -1,0 +1,193 @@
+from cryptography.fernet import Fernet
+from discord.ext import commands,tasks
+from itertools import cycle
+import discord
+import aiohttp
+import os
+import json
+
+
+data = json.load(open("config.json", encoding="utf-8")) 
+
+intents=discord.Intents.all()
+intents.message_content = True
+bot = commands.Bot(command_prefix=data["prefix"], intents=discord.Intents.all()) 
+
+
+status = cycle(['安全加密機器人', '無日誌加解密檔案']) #機器人顯示的個人狀態(可自行更改,要刪除這行也可以)
+
+
+@tasks.loop(seconds=10)  # 每隔10秒更換一次機器人個人狀態
+async def change_status():
+    await bot.change_presence(activity=discord.Game(next(status)))
+
+
+@bot.event
+async def on_ready():
+    slash = await bot.tree.sync()
+    print(f"目前登入身份 --> {bot.user}")
+    print(f"載入 {len(slash)} 個斜線指令")
+    change_status.start()
+
+
+
+
+@bot.tree.command(name="生成金鑰", description="重新生成你的加密金鑰(先前加密的檔案將無法解密)") 
+async def generate_key(ctx):
+    try:
+        key = Fernet.generate_key()
+        with open(f"keys/{ctx.user.id}.key", "wb") as key_file:
+            key_file.write(key)
+            key = key.decode('utf-8')
+        await ctx.response.send_message(f"已重新生成加密金鑰，請妥善保管，遺失後將無法解密檔案:\n**{key}**", ephemeral=True)
+    except Exception as e:
+        await ctx.response.send_message(f"生成失敗:\n**{e}**", ephemeral=True)
+
+
+@bot.tree.command(name="查詢金鑰", description="查詢你當前的加密金鑰") 
+async def check_key(ctx):
+    path = f"keys/{ctx.user.id}.key"
+    if not os.path.exists(path) or os.path.getsize(path)==0:
+        await ctx.response.send_message(f"並無已生成的金鑰，請使用/加密 或 /生成金鑰來獲取金鑰", ephemeral=True)
+        return
+    try:
+        with open(path, "rb") as file:
+            data = file.read()
+            key = data.decode('utf-8')
+        await ctx.response.send_message(f"你的金鑰是:\n**{key}**", ephemeral=True)
+    except Exception as e:
+        await ctx.response.send_message(f"查詢失敗:\n**{e}**", ephemeral=True)
+
+
+
+@bot.tree.command(name="設定金鑰", description="重新設定你的加密金鑰(先前加密的檔案將無法解密)") 
+async def set_key(ctx, key:str):
+    try:
+        with open(f"keys/{ctx.user.id}.key", "wb") as key_file:
+            msg_2 = bytes(key, 'utf-8')
+            key_file.write(msg_2)
+        await ctx.response.send_message(f"已更改加密金鑰:\n**{msg_2.decode('utf-8')}**", ephemeral=True)
+    except Exception as e:
+        await ctx.response.send_message(f"設定失敗:\n**{e}**", ephemeral=True)
+
+
+
+
+
+
+@bot.tree.command(name="加密", description="加密你的檔案") 
+async def encrypt(ctx, the_file: discord.Attachment):
+    if the_file.size > 15728640: #discord機器人最多只能上傳20MB的檔案，由於加密完檔案會變大所以設定最大15MB
+        await ctx.response.send_message("檔案過大!檔案不可大於15MB", ephemeral=True)
+        return
+    path = f"keys/{ctx.user.id}.key"
+    if not os.path.exists(path) or os.path.getsize(path)==0:   
+        key = Fernet.generate_key()
+        with open(f"keys/{ctx.user.id}.key", "wb") as key_file:
+            key_file.write(key)
+            key = key.decode('utf-8')
+        no_key = f"未找到已經存在的金鑰，已生成新的金鑰:\n**{key}**\n請妥善保管，遺失後將無法解密檔案\n\n"     
+    else:
+        no_key = ""
+    try:
+        if ctx.user == bot.user:
+            return
+
+        await ctx.response.send_message(content = f"{no_key}加密完成，請稍後查看私訊", ephemeral=True)
+        await download_file(the_file.url, the_file.filename)
+        print(f'{the_file.filename} 已下載')
+        encrypt_file(the_file.filename, ctx.user.id)
+        file = discord.File(f"{str(the_file.filename)}.enc")
+        await ctx.user.send(content = f"加密成功", file = file)
+
+    except Exception as e:
+        await ctx.response.send_message(f"加密失敗:\n**{e}**", ephemeral=True)
+    os.remove(the_file.filename)
+    os.remove(f"{the_file.filename}.enc")
+
+
+
+
+@bot.tree.command(name="解密", description="解密你的檔案") 
+async def decrypt(ctx, the_file: discord.Attachment):
+    if the_file.size > 15728640: #discord機器人最多只能上傳20MB的檔案，由於加密完檔案會變大所以設定最大15MB
+        await ctx.response.send_message("檔案過大!檔案不可大於15MB", ephemeral=True)
+        return
+    path = f"keys/{ctx.user.id}.key"
+    if not os.path.exists(path) or os.path.getsize(path)==0:   
+        await ctx.response.send_message("找不到解密金鑰", ephemeral=True)
+        return
+    try:
+        if ctx.user == bot.user:
+            return
+        if not the_file.filename.endswith(".enc"):
+            await ctx.response.send_message("解密失敗:\n**請提供正確的加密檔案(.enc結尾)**", ephemeral=True)
+            return
+        await ctx.response.send_message(content = "解密完成，請稍後查看私訊", ephemeral=True)
+        await download_file(the_file.url, the_file.filename)
+        print(f'{the_file.filename} 已下載')
+        decrypt_file(the_file.filename, ctx.user.id)
+        file_name = str(the_file.filename)
+        file_name = file_name[:-4]
+        file = discord.File(file_name)
+        await ctx.user.send(content = f"解密成功", file = file)
+
+    except Exception as e:
+        await ctx.response.send_message(f"解密失敗:\n**{e}**", ephemeral=True)
+    os.remove(the_file.filename)
+    os.remove(file_name)
+
+
+
+
+
+
+
+# 加載密鑰
+def load_key(userid):
+    return open(f"keys/{userid}.key", "rb").read()
+
+# 加密文件
+def encrypt_file(filename,userid):
+    key = load_key(userid)
+    f = Fernet(key)
+    
+    with open(filename, "rb") as file:
+        file_data = file.read()
+
+
+        
+    encrypted_data = f.encrypt(file_data)
+    
+    with open(filename + ".enc", "wb") as file:
+        file.write(encrypted_data)
+
+
+
+# 解密文件
+def decrypt_file(filename,userid):
+    key = load_key(userid)
+    f = Fernet(key)
+    
+    with open(filename, "rb") as file:
+        encrypted_data = file.read()
+
+        
+    decrypted_data = f.decrypt(encrypted_data)
+    
+    with open(filename[:-4], "wb") as file:
+        file.write(decrypted_data)
+    file.close()
+
+
+async def download_file(url, filename):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                with open(filename, 'wb') as f:
+                    f.write(await response.read())
+                    f.close()
+
+
+
+bot.run(data["token"])
