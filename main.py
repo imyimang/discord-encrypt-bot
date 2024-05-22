@@ -33,7 +33,9 @@ async def on_ready():
 
 @bot.tree.command(name="help", description="查看指令使用說明") 
 async def help(ctx):
-    await ctx.response.send_message("# 指令說明\n## 注意!使用前請確保您沒有封鎖機器人並且有開啟私訊功能，否則將無法收到加解密完的檔案\n* **/help** 查看指令說明\n* **/生成金鑰** 生成加密金鑰，如果已經有金鑰將會被覆蓋\n* **/設定金鑰** 設定你的解密金鑰(解密他人檔案時可以用到)\n* **/加密** 用金鑰加密你的檔案(檔案最大15MB)，如果還沒有金鑰會先生成一個\n* **/解密** 用金鑰解密你的檔案(檔案最大15MB)，如果要解密其他金鑰加密的檔案請用**/設定金鑰**\n\n *made by* [*yimang*](https://github.com/imyimang/discord-encrypt-bot)\n[邀請機器人](https://discord.com/oauth2/authorize?client_id=1242337935022624788&permissions=551903332352&scope=bot)", ephemeral=True)
+    await ctx.response.send_message("# 指令說明\n## 注意!使用前請確保您沒有封鎖機器人並且有開啟私訊功能，否則將無法收到加解密完的檔案\n* **/help** 查看指令說明\n* **/生成金鑰** 生成加密金鑰，如果已經有金鑰將會被覆蓋\n* **/設定金鑰** 設定你的解密金鑰(解密他人檔案時可以用到)\n* **/加密** 用金鑰加密你的檔案(檔案最大15MB)，如果還沒有金鑰會先生成一個，optional_key為選填，如果填寫本次就會用該金鑰解密，沒有填寫就會用預設金鑰解密，預設金鑰可以用**/查詢金鑰**來查詢\n* **/解密** 用金鑰解密你的檔案(檔案最大15MB)，如果要解密其他金鑰加密的檔案請用**/設定金鑰**，optional_key為選填，如果填寫本次就會用該金鑰解密，沒有填寫就會用預設金鑰解密，預設金鑰可以用**/查詢金鑰**來查詢\n\n *made by* [*yimang*](https://github.com/imyimang/discord-encrypt-bot)\n[邀請機器人](https://discord.com/oauth2/authorize?client_id=1242337935022624788&permissions=551903332352&scope=bot)", ephemeral=True)
+
+
 
 @bot.tree.command(name="生成金鑰", description="重新生成你的加密金鑰(先前加密的檔案將無法解密)") 
 async def generate_key(ctx):
@@ -49,10 +51,12 @@ async def generate_key(ctx):
 
 @bot.tree.command(name="查詢金鑰", description="查詢你當前的加密金鑰") 
 async def check_key(ctx):
+
     path = f"keys/{ctx.user.id}.key"
     if not os.path.exists(path) or os.path.getsize(path)==0:
         await ctx.response.send_message(f"並無已生成的金鑰，請使用/加密 或 /生成金鑰來獲取金鑰", ephemeral=True)
         return
+    
     try:
         with open(path, "rb") as file:
             data = file.read()
@@ -70,6 +74,7 @@ async def set_key(ctx, key:str):
             msg_2 = bytes(key, 'utf-8')
             key_file.write(msg_2)
         await ctx.response.send_message(f"已更改加密金鑰:\n**{msg_2.decode('utf-8')}**", ephemeral=True)
+    
     except Exception as e:
         await ctx.response.send_message(f"設定失敗:\n**{e}**", ephemeral=True)
 
@@ -79,11 +84,13 @@ async def set_key(ctx, key:str):
 
 
 @bot.tree.command(name="加密", description="加密你的檔案") 
-async def encrypt(ctx, the_file: discord.Attachment):
-    if the_file.size > 15728640: #discord機器人最多只能上傳20MB的檔案，由於加密完檔案會變大所以設定最大15MB
+async def encrypt(ctx: discord.Interaction, the_file: discord.Attachment,optional_key:str = None):
+    if the_file.size > 15728640:
         await ctx.response.send_message("檔案過大!檔案不可大於15MB", ephemeral=True)
         return
+    
     path = f"keys/{ctx.user.id}.key"
+
     if not os.path.exists(path) or os.path.getsize(path)==0:   
         key = Fernet.generate_key()
         with open(f"keys/{ctx.user.id}.key", "wb") as key_file:
@@ -92,19 +99,24 @@ async def encrypt(ctx, the_file: discord.Attachment):
         no_key = f"未找到已經存在的金鑰，已生成新的金鑰:\n**{key}**\n請妥善保管，遺失後將無法解密檔案\n\n"     
     else:
         no_key = ""
+
     try:
         if ctx.user == bot.user:
             return
 
+        # 下載並儲存附件
         await ctx.response.send_message(content = f"{no_key}加密完成，請稍後查看私訊", ephemeral=True)
         await download_file(the_file.url, the_file.filename)
         print(f'{the_file.filename} 已下載')
-        encrypt_file(the_file.filename, ctx.user.id)
+        if optional_key:
+            encrypt_file(the_file.filename, ctx.user.id,optional_key)
+        else:
+            encrypt_file(the_file.filename, ctx.user.id,None)
         file = discord.File(f"{str(the_file.filename)}.enc")
         await ctx.user.send(content = f"加密成功", file = file)
 
     except Exception as e:
-        await ctx.response.send_message(f"加密失敗:\n**{e}**", ephemeral=True)
+        await ctx.user.send(f"加密失敗:\n**{e}**")
     os.remove(the_file.filename)
     os.remove(f"{the_file.filename}.enc")
 
@@ -112,31 +124,37 @@ async def encrypt(ctx, the_file: discord.Attachment):
 
 
 @bot.tree.command(name="解密", description="解密你的檔案") 
-async def decrypt(ctx, the_file: discord.Attachment):
-    if the_file.size > 15728640: #discord機器人最多只能上傳20MB的檔案，由於加密完檔案會變大所以設定最大15MB
+async def decrypt(ctx: discord.Interaction,the_file: discord.Attachment,optional_key:str = None):
+    if the_file.size > 15728640:
         await ctx.response.send_message("檔案過大!檔案不可大於15MB", ephemeral=True)
         return
+    
     path = f"keys/{ctx.user.id}.key"
     if not os.path.exists(path) or os.path.getsize(path)==0:   
         await ctx.response.send_message("找不到解密金鑰", ephemeral=True)
         return
+    
     try:
         if ctx.user == bot.user:
             return
+        # 下載並儲存附件
         if not the_file.filename.endswith(".enc"):
             await ctx.response.send_message("解密失敗:\n**請提供正確的加密檔案(.enc結尾)**", ephemeral=True)
             return
         await ctx.response.send_message(content = "解密完成，請稍後查看私訊", ephemeral=True)
         await download_file(the_file.url, the_file.filename)
         print(f'{the_file.filename} 已下載')
-        decrypt_file(the_file.filename, ctx.user.id)
+        if optional_key:
+            decrypt_file(the_file.filename, ctx.user.id,optional_key)
+        else:
+            decrypt_file(the_file.filename, ctx.user.id,None)
         file_name = str(the_file.filename)
         file_name = file_name[:-4]
         file = discord.File(file_name)
         await ctx.user.send(content = f"解密成功", file = file)
 
     except Exception as e:
-        await ctx.response.send_message(f"解密失敗:\n**{e}**", ephemeral=True)
+        await ctx.user.send(f"解密失敗:\n**{e}**")
     os.remove(the_file.filename)
     os.remove(file_name)
 
@@ -151,8 +169,12 @@ def load_key(userid):
     return open(f"keys/{userid}.key", "rb").read()
 
 # 加密文件
-def encrypt_file(filename,userid):
-    key = load_key(userid)
+def encrypt_file(filename,userid,optional_key):
+    if optional_key:
+        key = optional_key
+        key = bytes(key, 'utf-8')
+    else:
+        key = load_key(userid)
     f = Fernet(key)
     
     with open(filename, "rb") as file:
@@ -167,9 +189,14 @@ def encrypt_file(filename,userid):
 
 
 
+
 # 解密文件
-def decrypt_file(filename,userid):
-    key = load_key(userid)
+def decrypt_file(filename,userid,optional_key):
+    if optional_key:
+        key = optional_key
+        key = bytes(key, 'utf-8')
+    else:
+        key = load_key(userid)
     f = Fernet(key)
     
     with open(filename, "rb") as file:
