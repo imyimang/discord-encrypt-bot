@@ -83,7 +83,7 @@ async def set_key(ctx, key:str):
 
 
 @bot.tree.command(name="加密", description="加密你的檔案") 
-async def encrypt(ctx: discord.Interaction, the_file: discord.Attachment,optional_key:str = None):
+async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment,optional_key:str = None):
     if the_file.size > 15728640:
         await ctx.response.send_message("檔案過大!檔案不可大於15MB", ephemeral=True)
         return
@@ -123,7 +123,7 @@ async def encrypt(ctx: discord.Interaction, the_file: discord.Attachment,optiona
 
 
 @bot.tree.command(name="解密", description="解密你的檔案") 
-async def decrypt(ctx: discord.Interaction,the_file: discord.Attachment,optional_key:str = None):
+async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,optional_key:str = None):
     if the_file.size > 15728640:
         await ctx.response.send_message("檔案過大!檔案不可大於15MB", ephemeral=True)
         return
