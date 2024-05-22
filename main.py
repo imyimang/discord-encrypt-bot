@@ -33,7 +33,7 @@ async def on_ready():
 
 @bot.tree.command(name="help", description="查看指令使用說明") 
 async def help(ctx):
-    await ctx.response.send_message("# 指令說明\n## 注意!使用前請確保您沒有封鎖機器人並且有開啟私訊功能，否則將無法收到加解密完的檔案\n* **/help** 查看指令說明\n* **/生成金鑰** 生成加密金鑰，如果已經有金鑰將會被覆蓋\n* **/設定金鑰** 設定你的解密金鑰(解密他人檔案時可以用到)\n* **/查詢金鑰** 查詢你當前預設的金鑰\n* **/加密** 用金鑰加密你的檔案(檔案最大15MB)，如果還沒有金鑰會先生成一個，optional_key為選填，如果填寫本次就會用該金鑰解密，沒有填寫就會用預設金鑰解密，預設金鑰可以用**/查詢金鑰**來查詢\n* **/解密** 用金鑰解密你的檔案(檔案最大15MB)，如果要解密其他金鑰加密的檔案請用**/設定金鑰**，optional_key為選填，如果填寫本次就會用該金鑰解密，沒有填寫就會用預設金鑰解密，預設金鑰可以用**/查詢金鑰**來查詢\n\n *made by* [*yimang*](https://github.com/imyimang/discord-encrypt-bot)\n[邀請機器人](https://discord.com/oauth2/authorize?client_id=1242337935022624788&permissions=551903332352&scope=bot)", ephemeral=True)
+    await ctx.response.send_message("# 指令說明\n* **/help** 查看指令說明\n* **/生成金鑰** 生成加密金鑰，如果已經有金鑰將會被覆蓋\n* **/設定金鑰** 設定你的解密金鑰(解密他人檔案時可以用到)\n* **/查詢金鑰** 查詢你當前預設的金鑰\n* **/加密** 用金鑰加密你的檔案(檔案最大15MB)，如果還沒有金鑰會先生成一個，optional_key為選填，如果填寫本次就會用該金鑰解密，沒有填寫就會用預設金鑰解密，預設金鑰可以用**/查詢金鑰**來查詢\n* **/解密** 用金鑰解密你的檔案(檔案最大15MB)，如果要解密其他金鑰加密的檔案請用**/設定金鑰**，optional_key為選填，如果填寫本次就會用該金鑰解密，沒有填寫就會用預設金鑰解密，預設金鑰可以用**/查詢金鑰**來查詢\n\n *made by* [*yimang*](https://github.com/imyimang/discord-encrypt-bot)\n[邀請機器人](https://discord.com/oauth2/authorize?client_id=1242337935022624788&permissions=551903332352&scope=bot)", ephemeral=True)
 
 
 @bot.tree.command(name="生成金鑰", description="重新生成你的加密金鑰(先前加密的檔案將無法解密)") 
@@ -103,8 +103,7 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
         if ctx.user == bot.user:
             return
 
-        # 下載並儲存附件
-        await ctx.response.send_message(content = f"{no_key}加密完成，請稍後查看私訊", ephemeral=True)
+        await ctx.response.defer(ephemeral=True)
         await download_file(the_file.url, the_file.filename)
         print(f'{the_file.filename} 已下載')
         if optional_key:
@@ -112,10 +111,10 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
         else:
             encrypt_file(the_file.filename, ctx.user.id,None)
         file = discord.File(f"{str(the_file.filename)}.enc")
-        await ctx.user.send(content = f"加密成功", file = file)
+        await ctx.followup.send(content = f"{no_key}加密成功",file = file, ephemeral=True)
 
     except Exception as e:
-        await ctx.user.send(f"加密失敗:\n**{e}**")
+        await ctx.followup.send(f"加密失敗:\n**{e}**")
     os.remove(the_file.filename)
     os.remove(f"{the_file.filename}.enc")
 
@@ -140,7 +139,7 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
         if not the_file.filename.endswith(".enc"):
             await ctx.response.send_message("解密失敗:\n**請提供正確的加密檔案(.enc結尾)**", ephemeral=True)
             return
-        await ctx.response.send_message(content = "解密完成，請稍後查看私訊", ephemeral=True)
+        await ctx.response.defer(ephemeral=True)
         await download_file(the_file.url, the_file.filename)
         print(f'{the_file.filename} 已下載')
         if optional_key:
@@ -150,10 +149,10 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
         file_name = str(the_file.filename)
         file_name = file_name[:-4]
         file = discord.File(file_name)
-        await ctx.user.send(content = f"解密成功", file = file)
+        await ctx.followup.send(content = "解密成功",file = file, ephemeral=True)
 
     except Exception as e:
-        await ctx.user.send(f"解密失敗:\n**{e}**")
+        await ctx.followup.send(f"解密失敗:\n**{e}**")
     os.remove(the_file.filename)
     os.remove(file_name)
 
