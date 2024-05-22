@@ -36,6 +36,7 @@ async def help(ctx):
     await ctx.response.send_message("# 指令說明\n* **/help** 查看指令說明\n* **/生成金鑰** 生成加密金鑰，如果已經有金鑰將會被覆蓋\n* **/設定金鑰** 設定你的解密金鑰(解密他人檔案時可以用到)\n* **/查詢金鑰** 查詢你當前預設的金鑰\n* **/加密** 用金鑰加密你的檔案(檔案最大15MB)，如果還沒有金鑰會先生成一個，optional_key為選填，如果填寫本次就會用該金鑰解密，沒有填寫就會用預設金鑰解密，預設金鑰可以用**/查詢金鑰**來查詢\n* **/解密** 用金鑰解密你的檔案(檔案最大15MB)，如果要解密其他金鑰加密的檔案請用**/設定金鑰**，optional_key為選填，如果填寫本次就會用該金鑰解密，沒有填寫就會用預設金鑰解密，預設金鑰可以用**/查詢金鑰**來查詢\n\n *made by* [*yimang*](https://github.com/imyimang/discord-encrypt-bot)\n[邀請機器人](https://discord.com/oauth2/authorize?client_id=1242337935022624788&permissions=551903332352&scope=bot)", ephemeral=True)
 
 
+
 @bot.tree.command(name="生成金鑰", description="重新生成你的加密金鑰(先前加密的檔案將無法解密)") 
 async def generate_key(ctx):
     try:
@@ -46,6 +47,7 @@ async def generate_key(ctx):
         await ctx.response.send_message(f"已重新生成加密金鑰，請妥善保管，遺失後將無法解密檔案:\n**{key}**", ephemeral=True)
     except Exception as e:
         await ctx.response.send_message(f"生成失敗:\n**{e}**", ephemeral=True)
+
 
 
 @bot.tree.command(name="查詢金鑰", description="查詢你當前的加密金鑰") 
@@ -76,9 +78,6 @@ async def set_key(ctx, key:str):
     
     except Exception as e:
         await ctx.response.send_message(f"設定失敗:\n**{e}**", ephemeral=True)
-
-
-
 
 
 
@@ -117,7 +116,6 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
         await ctx.followup.send(f"加密失敗:\n**{e}**")
     os.remove(the_file.filename)
     os.remove(f"{the_file.filename}.enc")
-
 
 
 
@@ -160,8 +158,6 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
 
 
 
-
-
 # 加載密鑰
 def load_key(userid):
     return open(f"keys/{userid}.key", "rb").read()
@@ -187,7 +183,6 @@ def encrypt_file(filename,userid,optional_key):
 
 
 
-
 # 解密文件
 def decrypt_file(filename,userid,optional_key):
     if optional_key:
@@ -208,6 +203,8 @@ def decrypt_file(filename,userid,optional_key):
     file.close()
 
 
+
+#下載檔案
 async def download_file(url, filename):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
