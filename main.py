@@ -9,9 +9,9 @@ import json
 
 data = json.load(open("config.json", encoding="utf-8")) 
 
-intents=discord.Intents.all()
-intents.message_content = True
-bot = commands.Bot(command_prefix=data["prefix"], intents=discord.Intents.all()) 
+
+
+bot = commands.Bot(command_prefix=data["prefix"], intents=discord.Intents.all())
 
 
 status = cycle(['安全加密機器人', '無日誌加解密檔案']) #機器人顯示的個人狀態(可自行更改,要刪除這行也可以)
