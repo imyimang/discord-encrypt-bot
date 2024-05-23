@@ -89,7 +89,7 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
     
     path = f"keys/{ctx.user.id}.key"
 
-    if not os.path.exists(path) or os.path.getsize(path)==0:   
+    if (not os.path.exists(path) or os.path.getsize(path)==0) and not optional_key:  
         key = Fernet.generate_key()
         with open(f"keys/{ctx.user.id}.key", "wb") as key_file:
             key_file.write(key)
@@ -111,12 +111,12 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
             encrypt_file(the_file.filename, ctx.user.id,None)
         file = discord.File(f"{str(the_file.filename)}.enc")
         await ctx.followup.send(content = f"{no_key}加密成功",file = file, ephemeral=True)
-        print(f'{the_file.filename} 加密成功')
 
     except Exception as e:
         await ctx.followup.send(f"加密失敗:\n**{e}**")
     os.remove(the_file.filename)
     os.remove(f"{the_file.filename}.enc")
+
 
 
 
@@ -127,7 +127,7 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
         return
     
     path = f"keys/{ctx.user.id}.key"
-    if not os.path.exists(path) or os.path.getsize(path)==0:   
+    if (not os.path.exists(path) or os.path.getsize(path)==0) and not optional_key:
         await ctx.response.send_message("找不到解密金鑰", ephemeral=True)
         return
     
@@ -149,7 +149,6 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
         file_name = file_name[:-4]
         file = discord.File(file_name)
         await ctx.followup.send(content = "解密成功",file = file, ephemeral=True)
-        print(f'{the_file.filename} 解密成功')
 
     except Exception as e:
         await ctx.followup.send(f"解密失敗:\n**{e}**")
