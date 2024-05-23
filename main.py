@@ -201,7 +201,7 @@ def decrypt_file(filename,userid,optional_key):
     
     with open(filename[:-4], "wb") as file:
         file.write(decrypted_data)
-    file.close()
+
 
 
 
@@ -212,7 +212,7 @@ async def download_file(url, filename):
             if response.status == 200:
                 with open(filename, 'wb') as f:
                     f.write(await response.read())
-                    f.close()
+
 
 
 
