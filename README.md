@@ -12,6 +12,7 @@ pip install -U -r requirements.txt
 # 介紹
 ### [指令](docs/commands.md)
 ### [更新日誌](docs/log.md)
+### [檔案說明](docs/files.md)
 ### [邀請機器人](https://discord.com/oauth2/authorize?client_id=1242337935022624788&permissions=551903332352&scope=bot)
 
 
