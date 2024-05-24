@@ -5,6 +5,7 @@ import discord
 import aiohttp
 import os
 import json
+import base64
 
 
 data = json.load(open("config.json", encoding="utf-8")) 
@@ -69,16 +70,18 @@ async def check_key(ctx):
         await ctx.response.send_message(f"查詢失敗:\n**{e}**", ephemeral=True)
 
 
-
 @bot.tree.command(name="設定金鑰", description="重新設定你的加密金鑰(先前加密的檔案將無法解密)") 
 async def set_key(ctx, key:str):
     try:
-        if not os.path.exists("keys"):os.makedirs("keys")
-        with open(f"keys/{ctx.user.id}.key", "wb") as key_file:
-            msg_2 = bytes(key, 'utf-8')
-            key_file.write(msg_2)
-        await ctx.response.send_message(f"已更改加密金鑰:\n**{msg_2.decode('utf-8')}**", ephemeral=True)
-    
+        key = bytes(key, 'utf-8')
+        if is_valid_key(key):
+            with open(f"keys/{ctx.user.id}.key", "wb") as key_file:
+                
+                key_file.write(key)
+            await ctx.response.send_message(f"已更改加密金鑰:\n**{key.decode('utf-8')}**", ephemeral=True)
+        else:
+             await ctx.response.send_message("請輸入有效的加密金鑰!", ephemeral=True)
+             
     except Exception as e:
         await ctx.response.send_message(f"設定失敗:\n**{e}**", ephemeral=True)
 
@@ -153,6 +156,7 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
         
         file = discord.File(f"temporary/{the_file.filename[:-4]}")
         await ctx.followup.send(content = "解密成功",file = file, ephemeral=True)
+    
     except Exception as e:
         if type(e) == InvalidToken:
             await ctx.followup.send(f"解密失敗:\n**解密金鑰錯誤**", ephemeral=True)
@@ -217,7 +221,13 @@ async def download_file(url, filename):
                 with open(f"temporary/{filename}", 'wb') as f:
                     f.write(await response.read())
 
-
+#檢測金鑰有效性
+def is_valid_key(s):
+    try:
+        decoded_bytes = base64.urlsafe_b64decode(s)
+        return len(decoded_bytes) == 32
+    except:
+        return False
 
 
 bot.run(data["token"])
