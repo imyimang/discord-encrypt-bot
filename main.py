@@ -116,6 +116,8 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
 
     except Exception as e:
         await ctx.followup.send(f"加密失敗:\n**{e}**")
+        os.remove(f'temporary/{the_file.filename}')
+        return
     os.remove(f'temporary/{the_file.filename}')
     os.remove(f'temporary/{the_file.filename}.enc')
 
@@ -154,6 +156,8 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
 
     except Exception as e:
         await ctx.followup.send(f"解密失敗:\n**{e}**")
+        os.remove(f'temporary/{the_file.filename}')
+        return
     os.remove(f'temporary/{the_file.filename}')
     os.remove(f'temporary/{the_file.filename[:-4]}')
 
