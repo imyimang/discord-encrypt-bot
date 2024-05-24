@@ -110,10 +110,7 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
         await ctx.response.defer(ephemeral=True)
         await download_file(the_file.url, the_file.filename)
         print(f'{the_file.filename} 已下載')
-        if optional_key:
-            encrypt_file(the_file.filename, ctx.user.id,optional_key)
-        else:
-            encrypt_file(the_file.filename, ctx.user.id,None)
+        encrypt_file(the_file.filename, ctx.user.id,optional_key)
         file = discord.File(f"temporary/{(the_file.filename)}.enc")
         await ctx.followup.send(content = f"{no_key}加密成功",file = file, ephemeral=True)
 
@@ -148,10 +145,7 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
         await ctx.response.defer(ephemeral=True)
         await download_file(the_file.url, the_file.filename)
         print(f'{the_file.filename} 已下載')
-        if optional_key:
-            decrypt_file(the_file.filename, ctx.user.id,optional_key)
-        else:
-            decrypt_file(the_file.filename, ctx.user.id,None)
+        decrypt_file(the_file.filename, ctx.user.id, optional_key)
         
         file = discord.File(f"temporary/{the_file.filename[:-4]}")
         await ctx.followup.send(content = "解密成功",file = file, ephemeral=True)
