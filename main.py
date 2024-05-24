@@ -151,7 +151,7 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
         await ctx.followup.send(content = "解密成功",file = file, ephemeral=True)
     
     except Exception as e:
-        if type(e) == InvalidToken:
+        if isinstance(e, InvalidToken):
             await ctx.followup.send(f"解密失敗:\n**解密金鑰錯誤**", ephemeral=True)
         else:
             await ctx.followup.send(f"解密失敗:\n**{e}**", ephemeral=True)
