@@ -107,7 +107,6 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
 
     try:
         if ctx.user == bot.user:return
-        if not os.path.exists("temporary"):os.makedirs("temporary")
         await ctx.response.defer(ephemeral=True)
         await download_file(the_file.url, the_file.filename)
         print(f'{the_file.filename} 已下載')
@@ -147,7 +146,6 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
             await ctx.response.send_message("解密失敗:\n**請提供正確的加密檔案(.enc結尾)**", ephemeral=True)
             return
         await ctx.response.defer(ephemeral=True)
-        if not os.path.exists("temporary"):os.makedirs("temporary")
         await download_file(the_file.url, the_file.filename)
         print(f'{the_file.filename} 已下載')
         if optional_key:
@@ -219,6 +217,7 @@ async def download_file(url, filename):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status == 200:
+                if not os.path.exists("temporary"):os.makedirs("temporary")
                 with open(f"temporary/{filename}", 'wb') as f:
                     f.write(await response.read())
 
