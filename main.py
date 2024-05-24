@@ -171,8 +171,7 @@ def load_key(userid):
 # 加密文件
 def encrypt_file(filename,userid,optional_key):
     if optional_key:
-        key = optional_key
-        key = bytes(key, 'utf-8')
+        key = bytes(optional_key, "utf-8")
     else:
         key = load_key(userid)
     f = Fernet(key)
@@ -190,8 +189,7 @@ def encrypt_file(filename,userid,optional_key):
 # 解密文件
 def decrypt_file(filename,userid,optional_key):
     if optional_key:
-        key = optional_key
-        key = bytes(key, 'utf-8')
+        key = bytes(optional_key, "utf-8")
     else:
         key = load_key(userid)
     f = Fernet(key)
