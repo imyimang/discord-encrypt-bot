@@ -1,4 +1,4 @@
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from discord.ext import commands,tasks
 from itertools import cycle
 import discord
@@ -115,7 +115,7 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
         await ctx.followup.send(content = f"{no_key}加密成功",file = file, ephemeral=True)
 
     except Exception as e:
-        await ctx.followup.send(f"加密失敗:\n**{e}**")
+        await ctx.followup.send(f"加密失敗:\n**{e}**", ephemeral=True)
         os.remove(f'temporary/{the_file.filename}')
         return
     os.remove(f'temporary/{the_file.filename}')
@@ -153,9 +153,11 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
         
         file = discord.File(f"temporary/{the_file.filename[:-4]}")
         await ctx.followup.send(content = "解密成功",file = file, ephemeral=True)
-
     except Exception as e:
-        await ctx.followup.send(f"解密失敗:\n**{e}**")
+        if type(e) == InvalidToken:
+            await ctx.followup.send(f"解密失敗:\n**解密金鑰錯誤**", ephemeral=True)
+        else:
+            await ctx.followup.send(f"解密失敗:\n**{e}**", ephemeral=True)
         os.remove(f'temporary/{the_file.filename}')
         return
     os.remove(f'temporary/{the_file.filename}')
