@@ -75,6 +75,7 @@ async def set_key(ctx, key:str):
     try:
         key = bytes(key, 'utf-8')
         if is_valid_key(key):
+            if not os.path.exists("keys"):os.makedirs("keys")
             with open(f"keys/{ctx.user.id}.key", "wb") as key_file:
                 
                 key_file.write(key)
