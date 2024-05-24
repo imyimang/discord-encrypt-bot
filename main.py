@@ -14,7 +14,7 @@ data = json.load(open("config.json", encoding="utf-8"))
 bot = commands.Bot(command_prefix=data["prefix"], intents=discord.Intents.all())
 
 
-status = cycle(['安全加密機器人', '無日誌加解密檔案']) #機器人顯示的個人狀態(可自行更改,要刪除這行也可以)
+status = cycle(['安全加密機器人', '無日誌加解密檔案']) #機器人顯示的個人狀態,可自行更改
 
 
 @tasks.loop(seconds=10)  # 每隔10秒更換一次機器人個人狀態
