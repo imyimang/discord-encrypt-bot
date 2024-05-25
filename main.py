@@ -109,7 +109,7 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
     try:
         if ctx.user == bot.user:return
         await ctx.response.defer(ephemeral=True)
-        file_content = await download_file(the_file.url)
+        file_content = await read_file(the_file.url)
         encrypt_file(the_file.filename,file_content, ctx.user.id,optional_key)
         file = discord.File(f"temporary/{(the_file.filename)}.enc")
         await ctx.followup.send(content = f"{no_key}加密成功",file = file, ephemeral=True)
@@ -140,7 +140,7 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
             await ctx.response.send_message("解密失敗:\n**請提供正確的加密檔案(.enc結尾)**", ephemeral=True)
             return
         await ctx.response.defer(ephemeral=True)
-        file_content = await download_file(the_file.url)
+        file_content = await read_file(the_file.url)
         print(f'{the_file.filename} 已下載')
         decrypt_file(the_file.filename, file_content, ctx.user.id, optional_key)
         
@@ -191,7 +191,7 @@ def decrypt_file(filename,file_content,userid,optional_key):
 
 
 #下載檔案
-async def download_file(url):
+async def read_file(url):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status == 200:
