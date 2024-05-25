@@ -11,7 +11,6 @@ import base64
 data = json.load(open("config.json", encoding="utf-8")) 
 
 
-
 bot = commands.Bot(command_prefix=data["prefix"], intents=discord.Intents.all())
 
 
