@@ -30,7 +30,7 @@ async def on_ready():
     print(f"載入 {len(slash)} 個斜線指令")
     change_status.start()
 
-
+#===================================================
 
 @bot.tree.command(name="help", description="查看指令使用說明") 
 async def help(ctx):
@@ -68,6 +68,7 @@ async def check_key(ctx):
         await ctx.response.send_message(f"你的金鑰是:\n**{key}**", ephemeral=True)
     except Exception as e:
         await ctx.response.send_message(f"查詢失敗:\n**{e}**", ephemeral=True)
+
 
 
 @bot.tree.command(name="設定金鑰", description="重新設定你的加密金鑰(先前加密的檔案將無法解密)") 
@@ -108,25 +109,21 @@ async def encrypt_command(ctx: discord.Interaction, the_file: discord.Attachment
     try:
         if ctx.user == bot.user:return
         await ctx.response.defer(ephemeral=True)
-        await download_file(the_file.url, the_file.filename)
-        print(f'{the_file.filename} 已下載')
-        encrypt_file(the_file.filename, ctx.user.id,optional_key)
+        file_content = await download_file(the_file.url)
+        encrypt_file(the_file.filename,file_content, ctx.user.id,optional_key)
         file = discord.File(f"temporary/{(the_file.filename)}.enc")
         await ctx.followup.send(content = f"{no_key}加密成功",file = file, ephemeral=True)
 
     except Exception as e:
         await ctx.followup.send(f"加密失敗:\n**{e}**", ephemeral=True)
-        os.remove(f'temporary/{the_file.filename}')
         return
-    os.remove(f'temporary/{the_file.filename}')
     os.remove(f'temporary/{the_file.filename}.enc')
-
 
 
 
 @bot.tree.command(name="解密", description="解密你的檔案") 
 async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,optional_key:str = None):
-    if the_file.size > 15728640:
+    if the_file.size > 20971520:
         await ctx.response.send_message("檔案過大!檔案不可大於15MB", ephemeral=True)
         return
     
@@ -143,9 +140,9 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
             await ctx.response.send_message("解密失敗:\n**請提供正確的加密檔案(.enc結尾)**", ephemeral=True)
             return
         await ctx.response.defer(ephemeral=True)
-        await download_file(the_file.url, the_file.filename)
+        file_content = await download_file(the_file.url)
         print(f'{the_file.filename} 已下載')
-        decrypt_file(the_file.filename, ctx.user.id, optional_key)
+        decrypt_file(the_file.filename, file_content, ctx.user.id, optional_key)
         
         file = discord.File(f"temporary/{the_file.filename[:-4]}")
         await ctx.followup.send(content = "解密成功",file = file, ephemeral=True)
@@ -155,63 +152,51 @@ async def decrypt_command(ctx: discord.Interaction,the_file: discord.Attachment,
             await ctx.followup.send(f"解密失敗:\n**解密金鑰錯誤**", ephemeral=True)
         else:
             await ctx.followup.send(f"解密失敗:\n**{e}**", ephemeral=True)
-        os.remove(f'temporary/{the_file.filename}')
         return
-    os.remove(f'temporary/{the_file.filename}')
     os.remove(f'temporary/{the_file.filename[:-4]}')
 
-
-
-
+#===================================================
 
 # 加載密鑰
 def load_key(userid):
     return open(f"keys/{userid}.key", "rb").read()
 
 # 加密文件
-def encrypt_file(filename,userid,optional_key):
+def encrypt_file(filename,file_content,userid,optional_key):
     if optional_key:
         key = bytes(optional_key, "utf-8")
     else:
         key = load_key(userid)
     f = Fernet(key)
     
-    with open(f"temporary/{filename}", "rb") as file:
-        file_data = file.read()
-
-    encrypted_data = f.encrypt(file_data)
+    encrypted_data = f.encrypt(file_content)
     
     with open(f"temporary/{filename}" + ".enc", "wb") as file:
         file.write(encrypted_data)
 
 
-
 # 解密文件
-def decrypt_file(filename,userid,optional_key):
+def decrypt_file(filename,file_content,userid,optional_key):
     if optional_key:
         key = bytes(optional_key, "utf-8")
     else:
         key = load_key(userid)
     f = Fernet(key)
     
-    with open(f"temporary/{filename}", "rb") as file:
-        encrypted_data = file.read()
+    decrypted_data = f.decrypt(file_content)
 
-    decrypted_data = f.decrypt(encrypted_data)
     filename = f"temporary/{filename}"[:-4]
     with open(filename, "wb") as file:
         file.write(decrypted_data)
 
 
-
 #下載檔案
-async def download_file(url, filename):
+async def download_file(url):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status == 200:
-                if not os.path.exists("temporary"):os.makedirs("temporary")
-                with open(f"temporary/{filename}", 'wb') as f:
-                    f.write(await response.read())
+                return(await response.read())
+            
 
 #檢測金鑰有效性
 def is_valid_key(s):
