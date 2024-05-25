@@ -3,7 +3,7 @@
 
 *該機器人並不會記錄或保存任何加解密過的檔案*
 # 前置作業
-將需要的機器人設定填入config.json中
+將需要的機器人設定填入`config.json`中
 ```
 pip install -U -r requirements.txt
 ```
